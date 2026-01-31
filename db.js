@@ -24,12 +24,21 @@ async function initDb() {
       id SERIAL PRIMARY KEY,
       wishlist_id INT NOT NULL REFERENCES wishlists(id) ON DELETE CASCADE,
       title TEXT NOT NULL,
+      description TEXT,
+      link TEXT,
+      priority SMALLINT DEFAULT 0,
       reserved_by_telegram_id BIGINT REFERENCES users(telegram_id) ON DELETE SET NULL,
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
 
     CREATE INDEX IF NOT EXISTS idx_gifts_wishlist ON gifts(wishlist_id);
     CREATE INDEX IF NOT EXISTS idx_wishlists_owner ON wishlists(owner_telegram_id);
+  `);
+  // Миграция: добавить колонки к существующей таблице gifts
+  await pool.query(`
+    ALTER TABLE gifts ADD COLUMN IF NOT EXISTS description TEXT;
+    ALTER TABLE gifts ADD COLUMN IF NOT EXISTS link TEXT;
+    ALTER TABLE gifts ADD COLUMN IF NOT EXISTS priority SMALLINT DEFAULT 0;
   `);
 }
 
@@ -84,22 +93,77 @@ async function getWishlistByOwnerRef(ref) {
 
 async function getGifts(wishlistId) {
   const res = await pool.query(
-    `SELECT g.id, g.title, g.reserved_by_telegram_id, u.username AS reserved_by_username, u.first_name AS reserved_by_name
+    `SELECT g.id, g.title, g.description, g.link, g.priority, g.reserved_by_telegram_id,
+            u.username AS reserved_by_username, u.first_name AS reserved_by_name
      FROM gifts g
      LEFT JOIN users u ON u.telegram_id = g.reserved_by_telegram_id
      WHERE g.wishlist_id = $1
-     ORDER BY g.created_at`,
+     ORDER BY g.priority DESC NULLS LAST, g.created_at`,
     [wishlistId]
   );
   return res.rows;
 }
 
-async function addGift(wishlistId, title) {
+async function addGift(
+  wishlistId,
+  title,
+  description = null,
+  link = null,
+  priority = 0
+) {
   const res = await pool.query(
-    "INSERT INTO gifts (wishlist_id, title) VALUES ($1, $2) RETURNING id, title",
-    [wishlistId, title]
+    `INSERT INTO gifts (wishlist_id, title, description, link, priority)
+     VALUES ($1, $2, $3, $4, $5) RETURNING id, title, description, link, priority`,
+    [wishlistId, title, description, link, priority]
   );
   return res.rows[0];
+}
+
+async function updateGift(giftId, wishlistId, data) {
+  const updates = [];
+  const values = [];
+  let i = 1;
+  if (data.title !== undefined) {
+    updates.push(`title = $${i++}`);
+    values.push(data.title);
+  }
+  if (data.description !== undefined) {
+    updates.push(`description = $${i++}`);
+    values.push(data.description);
+  }
+  if (data.link !== undefined) {
+    updates.push(`link = $${i++}`);
+    values.push(data.link);
+  }
+  if (data.priority !== undefined) {
+    updates.push(`priority = $${i++}`);
+    values.push(data.priority);
+  }
+  if (updates.length === 0) return false;
+  values.push(giftId, wishlistId);
+  const res = await pool.query(
+    `UPDATE gifts SET ${updates.join(
+      ", "
+    )} WHERE id = $${i} AND wishlist_id = $${i + 1} RETURNING id`,
+    values
+  );
+  return res.rowCount > 0;
+}
+
+async function deleteGift(giftId, wishlistId) {
+  const res = await pool.query(
+    "DELETE FROM gifts WHERE id = $1 AND wishlist_id = $2 RETURNING id",
+    [giftId, wishlistId]
+  );
+  return res.rowCount > 0;
+}
+
+async function getGiftByIdAndWishlist(giftId, wishlistId) {
+  const res = await pool.query(
+    "SELECT id, title, description, link, priority FROM gifts WHERE id = $1 AND wishlist_id = $2",
+    [giftId, wishlistId]
+  );
+  return res.rows[0] || null;
 }
 
 async function reserveGift(giftId, telegramId, username, firstName) {
@@ -109,6 +173,22 @@ async function reserveGift(giftId, telegramId, username, firstName) {
     [giftId, telegramId]
   );
   return res.rowCount > 0;
+}
+
+async function unreserveGift(giftId, telegramId) {
+  const res = await pool.query(
+    "UPDATE gifts SET reserved_by_telegram_id = NULL WHERE id = $1 AND reserved_by_telegram_id = $2 RETURNING id",
+    [giftId, telegramId]
+  );
+  return res.rowCount > 0;
+}
+
+async function getWishlistOwnerTelegramId(wishlistId) {
+  const res = await pool.query(
+    "SELECT owner_telegram_id FROM wishlists WHERE id = $1",
+    [wishlistId]
+  );
+  return res.rows[0]?.owner_telegram_id ?? null;
 }
 
 async function getUserWishlistId(telegramId) {
@@ -137,7 +217,12 @@ module.exports = {
   getWishlistByOwnerRef,
   getGifts,
   addGift,
+  updateGift,
+  deleteGift,
+  getGiftByIdAndWishlist,
   reserveGift,
+  unreserveGift,
+  getWishlistOwnerTelegramId,
   getUserWishlistId,
   getShareLinkPayload,
 };
