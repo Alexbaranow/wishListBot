@@ -88,7 +88,7 @@ function registerTextHandler(bot) {
           "📝 Добавить <b>описание</b>? (магазин, размер, цвет — по желанию)",
           Markup.inlineKeyboard([
             [Markup.button.callback("⏭ Пропустить", "add_desc_skip")],
-            [Markup.button.callback("❌ Отмена", "owner_add_cancel")],
+            [Markup.button.callback("« Отмена", "owner_add_cancel")],
           ])
         );
       }
@@ -99,7 +99,7 @@ function registerTextHandler(bot) {
           "🔗 Добавить <b>ссылку</b> на товар?",
           Markup.inlineKeyboard([
             [Markup.button.callback("⏭ Пропустить", "add_link_skip")],
-            [Markup.button.callback("❌ Отмена", "owner_add_cancel")],
+            [Markup.button.callback("« Отмена", "owner_add_cancel")],
           ])
         );
       }
@@ -119,7 +119,7 @@ function registerTextHandler(bot) {
             ],
             [
               Markup.button.callback("⏭ Пропустить", "add_priority_skip"),
-              Markup.button.callback("❌ Отмена", "owner_add_cancel"),
+              Markup.button.callback("« Отмена", "owner_add_cancel"),
             ],
           ])
         );

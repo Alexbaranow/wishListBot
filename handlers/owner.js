@@ -45,29 +45,35 @@ async function sendOwnerList(ctx, wishlistId) {
   }
   userState.set(ctx.from.id, { ...state, currentWishlistId: wlId });
   const gifts = await db.getGifts(wlId);
-  const lines = gifts.map((g, i) => formatGiftLine(g, i));
   let header = `🎁 <b>${escapeHtml(meta.title)}</b>\n\n`;
   if (meta.event_date) {
     const until = formatEventDate(meta.event_date);
     if (until) header += `📅 Дедлайн: ${until}\n\n`;
   }
-  const text =
-    header + (lines.join("\n\n") || "Пока пусто. Нажми ➕ Добавить подарок.");
-  const keyboard =
-    gifts.length > 0
-      ? ownerListKeyboard(gifts, wlId)
-      : Markup.inlineKeyboard([
-          [Markup.button.callback("➕ Добавить подарок", "owner_add")],
-          [
-            Markup.button.callback("🔗 Ссылка", "owner_share"),
-            Markup.button.callback("📅 Дедлайн", `event_deadline_${wlId}`),
-          ],
-          [
-            Markup.button.callback("📋 К событиям", "owner_events"),
-            Markup.button.callback("❓ Помощь", "owner_help"),
-          ],
-        ]);
-  return ctx.replyWithHTML(text, keyboard);
+
+  if (gifts.length === 0) {
+    const text = header + "Пока пусто. Нажми ➕ Добавить подарок.";
+    const keyboard = Markup.inlineKeyboard([
+      [Markup.button.callback("➕ Добавить подарок", "owner_add")],
+      [
+        Markup.button.callback("🔗 Ссылка", "owner_share"),
+        Markup.button.callback("📅 Дедлайн", `event_deadline_${wlId}`),
+      ],
+      [
+        Markup.button.callback("📋 К событиям", "owner_events"),
+        Markup.button.callback("❓ Помощь", "owner_help"),
+      ],
+    ]);
+    return ctx.replyWithHTML(text, keyboard);
+  }
+
+  await ctx.replyWithHTML(header);
+  for (let i = 0; i < gifts.length; i++) {
+    const line = formatGiftLine(gifts[i], i, { forOwner: true });
+    const isLast = i === gifts.length - 1;
+    const keyboard = isLast ? ownerListKeyboard(gifts, wlId) : undefined;
+    await ctx.replyWithHTML(line, keyboard ?? {});
+  }
 }
 
 function registerOwnerHandlers(bot) {
@@ -103,7 +109,7 @@ function registerOwnerHandlers(bot) {
     return ctx.replyWithHTML(
       "➕ Введите <b>название события</b> (например: День рождения 2025, Новый год):",
       Markup.inlineKeyboard([
-        [Markup.button.callback("❌ Отмена", "owner_events")],
+        [Markup.button.callback("« Отмена", "owner_events")],
       ])
     );
   });

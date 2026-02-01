@@ -7,7 +7,6 @@ const { WELCOME_CHOICE } = require("../lib/constants");
 
 async function sendVisitorWishlist(ctx, wishlistId, ownerName, wishlistMeta) {
   const gifts = await db.getGifts(wishlistId);
-  const lines = gifts.map((g, i) => formatGiftLine(g, i));
   const eventTitle = wishlistMeta?.title || "Вишлист";
   let header = `🎁 <b>${escapeHtml(eventTitle)}</b> — ${escapeHtml(
     ownerName
@@ -16,7 +15,6 @@ async function sendVisitorWishlist(ctx, wishlistId, ownerName, wishlistMeta) {
     const until = formatEventDate(wishlistMeta.event_date);
     if (until) header += `📅 Подарки нужны до <b>${until}</b>\n\n`;
   }
-  const text = header + (lines.join("\n\n") || "Пока пусто.");
 
   const visitorId = ctx.from?.id;
   const freeGifts = gifts.filter((g) => !g.reserved_by_telegram_id);
@@ -46,7 +44,18 @@ async function sendVisitorWishlist(ctx, wishlistId, ownerName, wishlistMeta) {
     [Markup.button.callback("🔄 Обновить список", "refresh_visitor")],
     [Markup.button.callback("◀️ Главный экран", "visitor_back")]
   );
-  return ctx.replyWithHTML(text, Markup.inlineKeyboard(rows));
+  const keyboard = Markup.inlineKeyboard(rows);
+
+  if (gifts.length === 0) {
+    return ctx.replyWithHTML(header + "Пока пусто.", keyboard);
+  }
+
+  await ctx.replyWithHTML(header);
+  for (let i = 0; i < gifts.length; i++) {
+    const line = formatGiftLine(gifts[i], i);
+    const isLast = i === gifts.length - 1;
+    await ctx.replyWithHTML(line, isLast ? keyboard : {});
+  }
 }
 
 function registerVisitorHandlers(bot) {

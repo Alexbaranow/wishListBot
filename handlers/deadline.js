@@ -60,7 +60,7 @@ function registerDeadlineHandlers(bot) {
     return ctx.replyWithHTML(
       "📆 Введите <b>дату события</b> в формате ДД.ММ.ГГГГ (например 15.06.2025) или ДД.ММ (год — текущий):",
       Markup.inlineKeyboard([
-        [Markup.button.callback("❌ Отмена", "owner_list")],
+        [Markup.button.callback("« Отмена", "owner_list")],
       ])
     );
   });

@@ -39,7 +39,7 @@ function registerGiftHandlers(bot) {
     return ctx.replyWithHTML(
       "➕ Напиши <b>название подарка</b> (обязательно):",
       Markup.inlineKeyboard([
-        [Markup.button.callback("❌ Отмена", "owner_add_cancel")],
+        [Markup.button.callback("« Отмена", "owner_add_cancel")],
       ])
     );
   });
@@ -88,7 +88,7 @@ function registerGiftHandlers(bot) {
       "🔗 Добавить <b>ссылку</b> на товар?",
       Markup.inlineKeyboard([
         [Markup.button.callback("⏭ Пропустить", "add_link_skip")],
-        [Markup.button.callback("❌ Отмена", "owner_add_cancel")],
+        [Markup.button.callback("« Отмена", "owner_add_cancel")],
       ])
     );
   });
@@ -114,7 +114,7 @@ function registerGiftHandlers(bot) {
         ],
         [
           Markup.button.callback("⏭ Пропустить", "add_priority_skip"),
-          Markup.button.callback("❌ Отмена", "owner_add_cancel"),
+          Markup.button.callback("« Отмена", "owner_add_cancel"),
         ],
       ])
     );
@@ -182,7 +182,7 @@ function registerGiftHandlers(bot) {
     return ctx.replyWithHTML(
       `✏️ ${prompts[dbField]}`,
       Markup.inlineKeyboard([
-        [Markup.button.callback("❌ Отмена", "owner_list")],
+        [Markup.button.callback("« Отмена", "owner_list")],
       ])
     );
   });
@@ -253,7 +253,7 @@ function registerGiftHandlers(bot) {
       Markup.inlineKeyboard([
         [
           Markup.button.callback("✅ Да, удалить", `confirm_del_${giftId}`),
-          Markup.button.callback("❌ Нет", "owner_list"),
+          Markup.button.callback("« Нет", "owner_list"),
         ],
       ])
     );
