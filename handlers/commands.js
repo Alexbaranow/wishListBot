@@ -1,11 +1,16 @@
 const db = require("../db");
 const { message } = require("telegraf/filters");
 const { getOwnerKeyboard, choiceInlineButtons } = require("../lib/keyboards");
+const { WELCOME_CHOICE } = require("../lib/constants");
 const { escapeHtml } = require("../lib/utils");
 const { getHelpMessage } = require("./help");
 const { sendOwnerList } = require("./owner");
 
 function registerCommandHandlers(bot) {
+  bot.command("menu", (ctx) =>
+    ctx.replyWithHTML(WELCOME_CHOICE, choiceInlineButtons)
+  );
+
   bot.command("wishlist", sendOwnerList);
 
   bot.command("add", async (ctx) => {

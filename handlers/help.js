@@ -1,5 +1,5 @@
 const { userState } = require("../lib/state");
-const { getOwnerKeyboard } = require("../lib/keyboards");
+const { getHelpKeyboard } = require("../lib/keyboards");
 
 function getHelpMessage(owner = true) {
   let msg =
@@ -20,7 +20,7 @@ function registerHelpHandlers(bot) {
   bot.action("owner_help", async (ctx) => {
     await ctx.answerCbQuery();
     const viewing = userState.get(ctx.from.id)?.viewingWishlistId;
-    return ctx.replyWithHTML(getHelpMessage(!viewing), getOwnerKeyboard(ctx));
+    return ctx.replyWithHTML(getHelpMessage(!viewing), getHelpKeyboard(ctx));
   });
 }
 

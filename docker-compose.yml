@@ -1,5 +1,5 @@
-# PostgreSQL для бота. Запуск: docker compose up -d
-# Остановка: docker compose down
+# PostgreSQL + бот. Запуск: docker compose up -d
+# Бот перезапускается автоматически при падении и после перезагрузки системы
 services:
   postgres:
     image: postgres:16-alpine
@@ -11,6 +11,21 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    build: .
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-wishlist_bot}
 
 volumes:
   pgdata:
